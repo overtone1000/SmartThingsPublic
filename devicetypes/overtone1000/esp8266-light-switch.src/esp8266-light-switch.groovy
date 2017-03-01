@@ -13,6 +13,16 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
+ def DevicePath = "/control/"
+ def DevicePort = 80;
+ def DevicePostGet = "GET";
+ def DeviceBodyText = "GateTrigger=";
+ def UseJSON = false;
+ def HTTPAuth = false;
+ def HTTPUser = "";
+ def HTTPPassword = "";
+ 
 metadata {
 	definition (name: "ESP8266 Light Switch", namespace: "overtone1000", author: "Tyler Moore") {
 		capability "Light"
@@ -20,22 +30,21 @@ metadata {
         capability "Switch"
 
 		command "on"
-		command "automatic"
 		command "off"
 	}
 
 	//These are from the example. Are they input through the SmartThings app to set up the device?
 	preferences {
 		input("DeviceIP", "string", title:"Device IP Address", description: "Please enter your device's IP Address", required: true, displayDuringSetup: true)
-		input("DevicePort", "string", title:"Device Port", description: "Please enter port 80 or your device's Port", required: true, displayDuringSetup: true)
-		input("DevicePath", "string", title:"URL Path", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
-		input(name: "DevicePostGet", type: "enum", title: "POST or GET", options: ["POST","GET"], required: true, displayDuringSetup: true)
-		input("DeviceBodyText", "string", title:'Body Content', description: 'Type in "GateTrigger=" or "CustomTrigger="', required: true, displayDuringSetup: true)
-		input("UseJSON", "bool", title:"Use JSON instead of HTML?", description: "Use JSON instead of HTML?", defaultValue: false, required: false, displayDuringSetup: true)
+		//input("DevicePort", "string", title:"Device Port", description: "Please enter port 80 or your device's Port", required: true, displayDuringSetup: true)
+		//input("DevicePath", "string", title:"URL Path", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
+		//input(name: "DevicePostGet", type: "enum", title: "POST or GET", options: ["POST","GET"], required: true, displayDuringSetup: true)
+		//input("DeviceBodyText", "string", title:'Body Content', description: 'Type in "GateTrigger=" or "CustomTrigger="', required: true, displayDuringSetup: true)
+		//input("UseJSON", "bool", title:"Use JSON instead of HTML?", description: "Use JSON instead of HTML?", defaultValue: false, required: false, displayDuringSetup: true)
 		section() {
-			input("HTTPAuth", "bool", title:"Requires User Auth?", description: "Choose if the HTTP requires basic authentication", defaultValue: false, required: true, displayDuringSetup: true)
-			input("HTTPUser", "string", title:"HTTP User", description: "Enter your basic username", required: false, displayDuringSetup: true)
-			input("HTTPPassword", "string", title:"HTTP Password", description: "Enter your basic password", required: false, displayDuringSetup: true)
+			//input("HTTPAuth", "bool", title:"Requires User Auth?", description: "Choose if the HTTP requires basic authentication", defaultValue: false, required: true, displayDuringSetup: true)
+			//input("HTTPUser", "string", title:"HTTP User", description: "Enter your basic username", required: false, displayDuringSetup: true)
+			//input("HTTPPassword", "string", title:"HTTP Password", description: "Enter your basic password", required: false, displayDuringSetup: true)
 		}
 	}
 
@@ -58,21 +67,14 @@ metadata {
 // handle commands
 def off() {
 	log.debug "Triggered Lights Off"
-	sendEvent(name: "triggerswitch", value: "off", isStateChange: true) //Change the tile. This should be done in parse, but parse needs to be set up first.
-    state.blinds = "off";
+	//sendEvent(name: "triggerswitch", value: "off", isStateChange: true) //Change the tile. This should be done in parse, but parse needs to be set up first.
 	runCmd("off")
 }
 
 def on() {
 	log.debug "Triggered Lights On"
 	sendEvent(name: "triggerswitch", value: "on", isStateChange: true) //Change the tile. This should be done in parse, but parse needs to be set up first.
-    state.blinds = "on";
 	runCmd("on")
-}
-
-def automatic() {
-	log.debug "Executing 'automatic'"
-	// TODO: handle 'automatic' command
 }
 
 //Everything below is directly from the example
@@ -131,6 +133,29 @@ def runCmd(String varCommand) {
 def parse(String description) {
 	//This is from the example but doesn't yet handle motion on the motion sensor.
     
+    switch(description)
+    {
+    	case "SwitchOn":
+        	whichTile='mainon'
+            sendEvent(name: "triggerswitch", value: "on", isStateChange: true) //changes the tile appearance
+            def result = createEvent(name: "switch", value: "on", isStateChange: true)
+			return result
+        case "SwitchOff":
+        	whichTile='mainoff'
+            sendEvent(name: "triggerswitch", value: "off", isStateChange: true) //changes the tile appearance
+            def result = createEvent(name: "switch", value: "off", isStateChange: true)
+			return result
+        case "MotionDetected":
+        	def result = createEvent(name: "motion", value: "active", isStateChange: true)
+            return result
+        case "MotionAbsent":
+        	def result = createEvent(name: "motion", value: "inactive", isStateChange: true)
+            return result
+        default:
+        	log.debug "Unknown Description in parser '${description}'"
+    }
+    
+    /*
 	//log.debug "Parsing '${description}'"
 	def whichTile = ''	
 	log.debug "state.blinds " + state.blinds
@@ -158,6 +183,7 @@ def parse(String description) {
 			//log.debug "testswitch returned ${result?.descriptionText}"
 			return result
     }
+    */
 }
 
 private String convertIPtoHex(ipAddress) {
